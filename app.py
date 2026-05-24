@@ -27,7 +27,7 @@ SARVAM_STT_MODEL = st.secrets["SARVAM_STT_MODEL"]
 # ─────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="AI Video Assistant",
+    page_title="AI Meeting Assistant",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -230,6 +230,9 @@ with st.sidebar:
         "YouTube URL",
         placeholder="https://youtube.com/watch?v=..."
     )
+    st.caption(
+    "⚠️ Some YouTube videos may fail on cloud deployment due to YouTube anti-bot restrictions. Uploading video/audio files is recommended."
+   )
 
     uploaded_file = st.file_uploader(
         "Upload Audio / Video",
