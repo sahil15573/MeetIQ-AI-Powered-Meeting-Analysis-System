@@ -1,3 +1,5 @@
+import torch
+torch.classes.__path__ = []
 import streamlit as st
 import time
 import os
@@ -13,20 +15,14 @@ from core.extractor import (
 )
 from core.rag_engine import build_rag_chain, ask_question
 
-# ─────────────────────────────────────────────────────────────
-# Secrets
-# ─────────────────────────────────────────────────────────────
 
-WHISPER_MODEL = st.secrets["WHISPER_MODEL"]
-SARVAM_API_KEY = st.secrets["SARVAM_API_KEY"]
-SARVAM_STT_MODEL = st.secrets["SARVAM_STT_MODEL"]
 
 # ─────────────────────────────────────────────────────────────
 # Page Config
 # ─────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="AI Meeting Assistant",
+    page_title="MeetIQ",
     page_icon="🎬",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -214,7 +210,7 @@ def render_step_bar(label, key, icon):
 with st.sidebar:
 
     st.markdown(
-        '<div class="hero-title" style="font-size:1.8rem">🎬 AI Video</div>',
+        '<div class="hero-title" style="font-size:1.8rem">🎬 MeetIQ</div>',
         unsafe_allow_html=True
     )
 
@@ -283,7 +279,7 @@ with st.sidebar:
 # ─────────────────────────────────────────────────────────────
 
 st.markdown(
-    '<div class="hero-title">AI Video Assistant</div>',
+    '<div class="hero-title">MeetIQ AI</div>',
     unsafe_allow_html=True
 )
 
@@ -317,40 +313,40 @@ if run_btn:
 
         try:
 
-            with progress_placeholder.container():
-                st.info("⚙️ Pipeline running...")
+            def set_status(msg, step_key=None):
+                if step_key:
+                    update_step(step_key, "active")
+                print(msg, flush=True)
+                with progress_placeholder.container():
+                    st.info(msg)
 
-            update_step("audio", "active")
+            set_status("🔊 Step 1/6: Processing audio...", "audio")
             chunks = process_input(source)
             update_step("audio", "done")
 
-            update_step("transcript", "active")
+            set_status("📝 Step 2/6: Transcribing audio...", "transcript")
             transcript = transcribe_all(chunks, language)
             update_step("transcript", "done")
 
-            update_step("title", "active")
+            set_status("🏷️ Step 3/6: Generating title (Gemini)...", "title")
             title = generate_title(transcript)
             update_step("title", "done")
 
-            update_step("summary", "active")
+            set_status("📋 Step 4/6: Summarising transcript (Gemini)...", "summary")
             summary = summarize(transcript)
             update_step("summary", "done")
 
-            update_step("extract", "active")
-
+            set_status("🔍 Step 5/6: Extracting action items, decisions & questions...", "extract")
             action_items = extract_action_items(transcript)
-
             decisions = extract_key_decisions(transcript)
-
             questions = extract_questions(transcript)
-
             update_step("extract", "done")
 
-            update_step("rag", "active")
-
+            set_status("🧠 Step 6/6: Building RAG vector store...", "rag")
             rag_chain = build_rag_chain(transcript)
-
             update_step("rag", "done")
+
+            
 
             st.session_state.result = {
                 "title": title,
@@ -491,19 +487,4 @@ if st.session_state.result:
         st.rerun()
 
 else:
-
-    st.markdown("""
-    <div style="text-align:center;padding:5rem 2rem">
-        <div style="font-size:4rem">🎬</div>
-
-        <h2 style="margin-top:1rem">
-            Ready to Analyse
-        </h2>
-
-        <p style="color:#888">
-            Upload a meeting recording or paste a YouTube URL
-            to generate summaries, action items, and chat
-            with your meeting transcript.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    pass

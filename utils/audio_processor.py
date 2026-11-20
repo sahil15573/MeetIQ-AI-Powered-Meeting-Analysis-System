@@ -1,285 +1,281 @@
-import yt_dlp
+
 import os
+import math
 import subprocess
+from pathlib import Path
 
-DOWNLOAD_DIR = "downloades"
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-
-
-def download_youtube_audio(url: str) -> str:
-    output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
-
-    ydl_opts = {
-    "format": "bestaudio/best",
-    "quiet": True,
-    "noplaylist": True,
-
-    "extractor_args": {
-        "youtube": {
-            "player_client": ["android", "web"]
-        }
-    },
-}
-
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-
-        filename = ydl.prepare_filename(info)
-
-    filename = os.path.splitext(filename)[0] + ".wav"
-
-    return filename
+import yt_dlp
 
 
-def convert_to_wav(input_path: str) -> str:
-    output_path = os.path.splitext(input_path)[0] + "_converted.wav"
+# ---------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------
 
-    command = [
-        "ffmpeg",
-        "-y",
-        "-i",
-        input_path,
-        "-ac",
-        "1",
-        "-ar",
-        "16000",
-        output_path,
-    ]
-
-    subprocess.run(command, check=True)
-
-    return output_path
+DOWNLOAD_DIR = Path("downloads")
+DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def chunk_audio(wav_path: str, chunk_minutes: int = 10) -> list:
+# ---------------------------------------------------------
+# Helper: Run FFmpeg commands
+# ---------------------------------------------------------
 
-    import math
-
-    chunk_ms = chunk_minutes * 60 * 1000
-
-    chunks = []
-
-    duration_command = [
-        "ffprobe",
-        "-v",
-        "error",
-        "-show_entries",
-        "format=duration",
-        "-of",
-        "default=noprint_wrappers=1:nokey=1",
-        wav_path,
-    ]
+def run_command(command: list) -> None:
+    """Execute FFmpeg/FFprobe command and report errors."""
 
     result = subprocess.run(
-        duration_command,
+        command,
         capture_output=True,
         text=True
     )
 
-    duration = float(result.stdout.strip())
-
-    total_chunks = math.ceil(duration / (chunk_minutes * 60))
-
-    for i in range(total_chunks):
-
-        start_time = i * chunk_minutes * 60
-
-        output_chunk = f"{wav_path}_chunk_{i}.wav"
-
-        command = [
-            "ffmpeg",
-            "-y",
-            "-i",
-            wav_path,
-            "-ss",
-            str(start_time),
-            "-t",
-            str(chunk_minutes * 60),
-            "-acodec",
-            "pcm_s16le",
-            "-ar",
-            "16000",
-            "-ac",
-            "1",
-            output_chunk,
-        ]
-
-        subprocess.run(command, check=True)
-
-        if os.path.exists(output_chunk):
-            chunks.append(output_chunk)
-
-    return chunks
-
-
-def process_input(source: str) -> list:
-    if source.startswith("http://") or source.startswith("https://"):
-        print("Detected YouTube URL. Downloading audio...")
-        wav_path = download_youtube_audio(source)
-
-    else:
-        print("Detected local file. Converting to WAV...")
-        wav_path = convert_to_wav(source)
-
-    print("Chunking audio...")
-
-    chunks = chunk_audio(wav_path)
-
-    print(f"Audio ready — {len(chunks)} chunk(s) created.")
-
-    return chunks
-import yt_dlp
-import os
-import subprocess
-
-DOWNLOAD_DIR = "downloades"
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-
-
-def download_youtube_audio(url: str) -> str:
-    output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
-
-    ydl_opts = {
-    "format": "bestaudio[ext=m4a]/bestaudio/best",
-
-    "outtmpl": output_path,
-
-    "quiet": True,
-    "noplaylist": True,
-
-    "cookiefile": None,
-
-    "extractor_args": {
-        "youtube": {
-            "player_client": ["android", "web"]
-        }
-    },
-
-    "http_headers": {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/122.0.0.0 Safari/537.36"
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Command failed:\n{result.stderr}"
         )
-    },
 
-    "postprocessors": [
-        {
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "wav",
-            "preferredquality": "192",
-        }
-    ],
 
-    "retries": 10,
-    "fragment_retries": 10,
-    "skip_unavailable_fragments": True,
-}
+# ---------------------------------------------------------
+# Download YouTube Audio
+# ---------------------------------------------------------
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
+def download_youtube_audio(url: str) -> str:
 
-        filename = ydl.prepare_filename(info)
+    output_path = str(
+        DOWNLOAD_DIR / "%(title)s.%(ext)s"
+    )
 
-    filename = os.path.splitext(filename)[0] + ".wav"
+    ydl_opts = {
+        "format": "bestaudio/best",
+        "outtmpl": output_path,
+        "outtmpl_na_placeholder": "unknown",
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "retries": 10,
+        "fragment_retries": 10,
+        "postprocessors": [
+            {
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "wav",
+            }
+        ],
+    }
 
-    return filename
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
 
+            info = ydl.extract_info(
+                url,
+                download=True
+            )
+
+            filename = ydl.prepare_filename(info)
+
+        wav_path = str(
+            Path(filename).with_suffix(".wav")
+        )
+
+        if not os.path.exists(wav_path):
+            raise FileNotFoundError(
+                f"Downloaded WAV file not found: {wav_path}"
+            )
+
+        return wav_path
+
+    except Exception as e:
+        raise RuntimeError(
+            f"YouTube audio download failed: {e}"
+        ) from e
+
+
+# ---------------------------------------------------------
+# Convert Local Audio/Video to WAV
+# ---------------------------------------------------------
 
 def convert_to_wav(input_path: str) -> str:
-    output_path = os.path.splitext(input_path)[0] + "_converted.wav"
+
+    if not os.path.isfile(input_path):
+        raise FileNotFoundError(
+            f"Input file not found: {input_path}"
+        )
+
+    output_path = str(
+        Path(input_path).with_name(
+            Path(input_path).stem + "_converted.wav"
+        )
+    )
 
     command = [
         "ffmpeg",
         "-y",
-        "-i",
-        input_path,
-        "-ac",
-        "1",
-        "-ar",
-        "16000",
+        "-i", input_path,
+        "-vn",
+        "-ac", "1",
+        "-ar", "16000",
+        "-acodec", "pcm_s16le",
         output_path,
     ]
 
-    subprocess.run(command, check=True)
+    run_command(command)
+
+    if not os.path.exists(output_path):
+        raise RuntimeError("WAV conversion failed.")
 
     return output_path
 
 
-def chunk_audio(wav_path: str, chunk_minutes: int = 10) -> list:
+# ---------------------------------------------------------
+# Get Audio Duration
+# ---------------------------------------------------------
 
-    import math
+def get_audio_duration(wav_path: str) -> float:
 
-    chunk_ms = chunk_minutes * 60 * 1000
-
-    chunks = []
-
-    duration_command = [
+    command = [
         "ffprobe",
-        "-v",
-        "error",
-        "-show_entries",
-        "format=duration",
-        "-of",
-        "default=noprint_wrappers=1:nokey=1",
+        "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
         wav_path,
     ]
 
     result = subprocess.run(
-        duration_command,
+        command,
         capture_output=True,
         text=True
     )
 
-    duration = float(result.stdout.strip())
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"FFprobe failed: {result.stderr}"
+        )
 
-    total_chunks = math.ceil(duration / (chunk_minutes * 60))
+    try:
+        return float(result.stdout.strip())
+    except ValueError as e:
+        raise RuntimeError(
+            "Could not determine audio duration."
+        ) from e
+
+
+# ---------------------------------------------------------
+# Split Audio into Chunks
+# ---------------------------------------------------------
+
+def chunk_audio(
+    wav_path: str,
+    chunk_minutes: int = 10
+) -> list:
+
+    if not os.path.isfile(wav_path):
+        raise FileNotFoundError(
+            f"Audio file not found: {wav_path}"
+        )
+
+    if chunk_minutes <= 0:
+        raise ValueError(
+            "chunk_minutes must be greater than zero."
+        )
+
+    print("Checking audio duration...")
+
+    duration = get_audio_duration(wav_path)
+
+    if duration <= 0:
+        raise ValueError("Audio file is empty.")
+
+    chunk_seconds = chunk_minutes * 60
+
+    total_chunks = math.ceil(
+        duration / chunk_seconds
+    )
+
+    chunks = []
+
+    print(f"Audio duration: {duration:.2f} seconds")
+    print(f"Total chunks: {total_chunks}")
+
+    base_path = Path(wav_path)
 
     for i in range(total_chunks):
 
-        start_time = i * chunk_minutes * 60
+        start_time = i * chunk_seconds
 
-        output_chunk = f"{wav_path}_chunk_{i}.wav"
+        output_chunk = str(
+            base_path.with_name(
+                f"{base_path.stem}_chunk_{i}.wav"
+            )
+        )
 
         command = [
             "ffmpeg",
             "-y",
-            "-i",
-            wav_path,
-            "-ss",
-            str(start_time),
-            "-t",
-            str(chunk_minutes * 60),
-            "-acodec",
-            "pcm_s16le",
-            "-ar",
-            "16000",
-            "-ac",
-            "1",
+            "-i", wav_path,
+            "-ss", str(start_time),
+            "-t", str(chunk_seconds),
+            "-vn",
+            "-acodec", "pcm_s16le",
+            "-ar", "16000",
+            "-ac", "1",
             output_chunk,
         ]
 
-        subprocess.run(command, check=True)
+        print(
+            f"Creating chunk {i + 1}/{total_chunks}..."
+        )
 
-        if os.path.exists(output_chunk):
+        run_command(command)
+
+        if os.path.isfile(output_chunk):
             chunks.append(output_chunk)
+        else:
+            raise RuntimeError(
+                f"Failed to create chunk {i + 1}"
+            )
+
+    print("Audio chunking completed.")
 
     return chunks
 
 
+# ---------------------------------------------------------
+# Main Input Processor
+# ---------------------------------------------------------
+
 def process_input(source: str) -> list:
-    if source.startswith("http://") or source.startswith("https://"):
-        print("Detected YouTube URL. Downloading audio...")
+
+    source = source.strip()
+
+    if not source:
+        raise ValueError("Please provide a valid input.")
+
+    if source.startswith(("http://", "https://")):
+
+        print("Detected YouTube URL.")
+        print("Downloading audio...")
+
         wav_path = download_youtube_audio(source)
 
     else:
-        print("Detected local file. Converting to WAV...")
+
+        print("Detected local audio/video file.")
+        print("Converting to WAV...")
+
         wav_path = convert_to_wav(source)
 
-    print("Chunking audio...")
+    print("Starting audio chunking...")
 
-    chunks = chunk_audio(wav_path)
+    chunks = chunk_audio(
+        wav_path,
+        chunk_minutes=10
+    )
 
-    print(f"Audio ready — {len(chunks)} chunk(s) created.")
+    if not chunks:
+        raise RuntimeError(
+            "No audio chunks were generated."
+        )
+
+    print(
+        f"Audio ready: {len(chunks)} chunk(s) created."
+    )
 
     return chunks

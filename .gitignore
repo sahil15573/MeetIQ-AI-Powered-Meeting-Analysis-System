@@ -5,3 +5,30 @@ vector_db/
 downloads/
 downloades/
 *.pyc
+
+# Private API keys and secrets
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Python virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Generated audio and video
+downloads/
+downloades/
+*.wav
+*.mp3
+*.m4a
+*.mp4
+*.mov
+
+# Generated vector database
+vector_db/
+faiss_index/

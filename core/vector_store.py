@@ -4,17 +4,24 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+_embeddings_cache = None
 
 
 def get_embeddings():
-    return HuggingFaceEmbeddings(
-        model_name=EMBEDDING_MODEL,
-        model_kwargs={"device": "cpu"}
-    )
+    global _embeddings_cache
+    if _embeddings_cache is None:
+        _embeddings_cache = HuggingFaceEmbeddings(
+            model_name=EMBEDDING_MODEL,
+            model_kwargs={"device": "cpu"}
+        )
+    return _embeddings_cache
 
 
 def build_vector_store(transcript: str):
     print("Building vector store...")
+
+    if not transcript or not transcript.strip():
+        raise ValueError("Transcript is empty; cannot build vector store.")
 
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
@@ -22,6 +29,7 @@ def build_vector_store(transcript: str):
     )
 
     chunks = splitter.split_text(transcript)
+    print(f"Created {len(chunks)} chunks.")
 
     docs = [
         Document(
@@ -37,6 +45,7 @@ def build_vector_store(transcript: str):
         docs,
         embeddings
     )
+    print("Vector store built successfully.")
 
     return vector_store
 

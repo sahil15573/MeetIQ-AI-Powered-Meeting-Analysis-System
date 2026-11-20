@@ -2,7 +2,7 @@ import whisper
 import os
 import requests
 import subprocess
-import streamlit as st
+from core.config import get_setting, validate_setting
 
 # ─────────────────────────────────────────────────────────────
 # Config
@@ -10,11 +10,18 @@ import streamlit as st
 
 SARVAM_PIECE_SECONDS = 25
 
-WHISPER_MODEL = st.secrets["WHISPER_MODEL"]
+WHISPER_MODEL = get_setting("WHISPER_MODEL", "tiny")
 
-SARVAM_API_KEY = st.secrets["SARVAM_API_KEY"]
-SARVAM_STT_TRANSLATE_URL = "https://api.sarvam.ai/speech-to-text-translate"
-SARVAM_MODEL = st.secrets["SARVAM_STT_MODEL"]
+SARVAM_API_KEY = get_setting("SARVAM_API_KEY")
+
+SARVAM_MODEL = get_setting(
+    "SARVAM_STT_MODEL",
+    "saaras:v2.5"
+)
+
+SARVAM_STT_TRANSLATE_URL = (
+    "https://api.sarvam.ai/speech-to-text-translate"
+)
 
 _model = None
 
