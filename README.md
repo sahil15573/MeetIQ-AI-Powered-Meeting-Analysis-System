@@ -1,3 +1,4 @@
+
 # MeetIQ – AI-Powered Meeting Analysis System
 
 MeetIQ is an AI-powered meeting assistant designed to solve a common problem in the professional world, people attend countless meetings every day, but often forget important discussions, action items and decisions afterward.
@@ -291,3 +292,23 @@ Sahil Kumar
 # ⭐ Final Note
 
 MeetIQ is designed to bridge the gap between conversations and actionable knowledge by transforming raw meeting recordings into intelligent, searchable insights using Generative AI and RAG architecture.
+=======
+---
+title: Streamlit Template Space
+emoji: 🚀
+colorFrom: red
+colorTo: red
+sdk: docker
+app_port: 8501
+tags:
+  - streamlit
+pinned: false
+short_description: Streamlit template space
+---
+
+# Welcome to Streamlit!
+
+Edit `/src/streamlit_app.py` to customize this app to your heart's desire. :heart:
+
+If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
+forums](https://discuss.streamlit.io).

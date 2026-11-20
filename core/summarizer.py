@@ -1,4 +1,4 @@
-from langchain_mistralai import ChatMistralAI
+
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -7,15 +7,14 @@ from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 import streamlit as st
 
 
-# ─────────────────────────────────────────────────────────────
-# Load Mistral LLM
-# ─────────────────────────────────────────────────────────────
+from langchain_google_genai import ChatGoogleGenerativeAI
+import streamlit as st
 
 def get_llm():
-    return ChatMistralAI(
-        model="mistral-small-latest",
-        mistral_api_key=st.secrets["MISTRAL_API_KEY"],
-        temperature=0.3,
+    return ChatGoogleGenerativeAI(
+        model="gemini-3.8-flash",
+        google_api_key=st.secrets["GOOGLE_API_KEY"],
+        temperature=0.2,
     )
 
 

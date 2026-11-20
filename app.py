@@ -1,3 +1,5 @@
+import torch
+torch.classes.__path__ = []
 import streamlit as st
 import time
 import os
@@ -17,7 +19,7 @@ from core.rag_engine import build_rag_chain, ask_question
 # Secrets
 # ─────────────────────────────────────────────────────────────
 
-MISTRAL_API_KEY = st.secrets["MISTRAL_API_KEY"]
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 WHISPER_MODEL = st.secrets["WHISPER_MODEL"]
 SARVAM_API_KEY = st.secrets["SARVAM_API_KEY"]
 SARVAM_STT_MODEL = st.secrets["SARVAM_STT_MODEL"]

@@ -5,3 +5,4 @@ vector_db/
 downloads/
 downloades/
 *.pyc
+.streamlit/secrets.toml
