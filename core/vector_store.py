@@ -12,7 +12,7 @@ def get_embeddings():
     global _embeddings_cache
 
     if _embeddings_cache is None:
-        print("RAG: Starting embedding model download/load...", flush=True)
+        print("RAG: Initializing embeddings...", flush=True)
 
         _embeddings_cache = HuggingFaceEmbeddings(
             model_name=EMBEDDING_MODEL,
@@ -20,7 +20,11 @@ def get_embeddings():
             encode_kwargs={"normalize_embeddings": True}
         )
 
-        print("RAG: Embedding model loaded successfully.", flush=True)
+        print("RAG: Embeddings initialized!", flush=True)
+
+        print("RAG: Testing embedding generation...", flush=True)
+        test = _embeddings_cache.embed_query("MeetIQ test")
+        print(f"RAG: Test embedding size: {len(test)}", flush=True)
 
     return _embeddings_cache
 
